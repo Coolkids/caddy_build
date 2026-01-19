@@ -1,8 +1,8 @@
 name: Build Coolkid Caddy Image
 on:
   workflow_dispatch:
-  #schedule:
-  #    - cron: '0 0 15 * *'
+  schedule:
+    - cron: '0 16 * * *'
 jobs:
   build:
     runs-on: ubuntu-latest
