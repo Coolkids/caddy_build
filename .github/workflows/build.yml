@@ -32,7 +32,7 @@ jobs:
             | tail -n 1)
           CLEANT_TAG=$(echo $TAG | sed 's/^v//')
           echo "Docker Hub version: $CLEANT_TAG"
-          echo "docker_version==$CLEANT_TAG" >> $GITHUB_ENV
+          echo "docker_version=$CLEANT_TAG" >> $GITHUB_ENV
 
       - name: Compare Versions
         id: compare
