@@ -30,9 +30,8 @@ jobs:
             | grep -v '^latest$' \
             | sort -V \
             | tail -n 1)
-          CLEANT_TAG=$(echo $TAG | sed 's/^v//')
-          echo "Docker Hub version: $CLEANT_TAG"
-          echo "docker_version=$CLEANT_TAG" >> $GITHUB_ENV
+          echo "Docker Hub version: $TAG"
+          echo "docker_version=$TAG" >> $GITHUB_ENV
 
       - name: Compare Versions
         id: compare
