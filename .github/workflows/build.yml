@@ -13,11 +13,22 @@ jobs:
 
       - name: Release version
         id: release_version
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          API_URL="https://api.github.com/repos/caddyserver/caddy/releases/latest"
-          LATEST_VERSION=$(curl -s $API_URL | jq -r .tag_name)
-          CLEAN_VERSION=$(echo $LATEST_VERSION | sed 's/^v//')
-          echo "app_version=$CLEAN_VERSION" >> $GITHUB_ENV
+          VERSION=$(gh release view \
+            --repo caddyserver/caddy \
+            --json tagName \
+            -q .tagName)
+
+          if [ -z "$VERSION" ]; then
+            echo "::error::Failed to get latest release version"
+            exit 1
+          fi
+
+          VERSION=${VERSION#v}
+
+          echo "app_version=$VERSION" >> $GITHUB_ENV
 
       - name: Get Docker Hub Latest Version
         id: docker_version
@@ -25,25 +36,39 @@ jobs:
           IMAGE="${{ secrets.DOCKER_USERNAME }}/caddy"
 
           TAG=$(curl -fsSL \
-            "https://hub.docker.com/v2/repositories/${IMAGE}/tags?page_size=20" \
+            "https://hub.docker.com/v2/repositories/${IMAGE}/tags?page_size=100" \
             | jq -r '.results[].name' \
-            | grep -v '^latest$' \
+            | grep -Ev '^(latest)$' \
             | sort -V \
             | tail -n 1)
-          echo "Docker Hub version: $TAG"
+
+          if [ -z "$TAG" ]; then
+            echo "::error::Failed to get Docker Hub version"
+            exit 1
+          fi
+
           echo "docker_version=$TAG" >> $GITHUB_ENV
 
       - name: Compare Versions
         id: compare
         run: |
-          echo "GitHub : ${{ env.app_version }}"
-          echo "Docker : ${{ env.docker_version }}"
+          APP="${{ env.app_version }}"
+          DOCKER="${{ env.docker_version }}"
 
-          if [ "${{ env.app_version }}" = "${{ env.docker_version }}" ]; then
-            echo "Versions are the same. Skip build."
+          if [ -z "$APP" ] || [ "$APP" = "null" ]; then
+            echo "::error::Invalid app version"
+            exit 1
+          fi
+
+          if [ -z "$DOCKER" ] || [ "$DOCKER" = "null" ]; then
+            echo "::warning::Docker version unavailable"
+            echo "should_build=false" >> $GITHUB_ENV
+            exit 0
+          fi
+
+          if [ "$APP" = "$DOCKER" ]; then
             echo "should_build=false" >> $GITHUB_ENV
           else
-            echo "Versions differ. Start build."
             echo "should_build=true" >> $GITHUB_ENV
           fi
           
