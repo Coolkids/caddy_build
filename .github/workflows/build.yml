@@ -9,7 +9,7 @@ jobs:
     name: Build Docker Image
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Release version
         id: release_version
